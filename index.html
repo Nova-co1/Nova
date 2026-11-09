@@ -263,6 +263,71 @@ updateCart();
     $('newsletterForm').addEventListener('submit',e=>{e.preventDefault();const email=$('emailInput').value.trim();if(email){toast('You’re on the list. Good things coming ✳');$('emailInput').value='';}});
     $('menuToggle').addEventListener('click',()=>{$('searchBar').classList.toggle('open');$('searchInput').placeholder='Menu: search or explore below ↓';$('searchInput').focus();});
     document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeCart();closeProduct();$('searchBar').classList.remove('open');}});
+    function escapeTrackText(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[char]));
+}
+
+document.getElementById('trackOrderForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const form = e.currentTarget;
+  const result = document.getElementById('trackOrderResult');
+  const button = form.querySelector('button[type="submit"]');
+
+  button.disabled = true;
+  button.textContent = 'Checking...';
+  result.textContent = 'Looking for your order...';
+
+  try {
+    const { data, error } = await novaSupabase.functions.invoke(
+      'track-order',
+      {
+        body: {
+          order_number: form.elements.order_number.value.trim(),
+          phone: form.elements.phone.value.trim()
+        }
+      }
+    );
+
+    if (error) throw error;
+
+    if (!data || !data.order) {
+      throw new Error(data?.error || 'Order not found.');
+    }
+
+    const order = data.order;
+    const items = Array.isArray(order.items) ? order.items : [];
+
+    const safeItems = items.map(item => {
+      const name = String(item.name || item.product_name || 'Item');
+      const quantity = Number(item.quantity || item.qty || 1);
+      return `${name} × ${quantity}`;
+    });
+
+    result.innerHTML = `
+      <div style="margin-top:20px;padding:18px;border:1px solid #ddd;border-radius:12px;background:#fff;">
+        <h3>Order found ✓</h3>
+        <p><strong>Order:</strong> ${escapeTrackText(order.order_number)}</p>
+        <p><strong>Status:</strong> ${escapeTrackText(order.status || 'pending')}</p>
+        <p><strong>Total:</strong> ₹${Number(order.total || 0).toLocaleString('en-IN')}</p>
+        <p><strong>Items:</strong><br>${safeItems.map(escapeTrackText).join('<br>') || 'Your items'}</p>
+        <p><strong>Placed:</strong> ${order.created_at ? escapeTrackText(new Date(order.created_at).toLocaleString('en-IN')) : '—'}</p>
+      </div>
+    `;
+  } catch (error) {
+    console.error('Tracking error:', error);
+    result.textContent = "We couldn't find an order matching those details. Please check your order number and phone.";
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Track my order ↗';
+  }
+});
     renderProducts();updateCart();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
