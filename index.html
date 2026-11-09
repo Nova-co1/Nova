@@ -92,21 +92,35 @@
   <div class="toast" id="toast" role="status"></div>
 
   <script>
-    // ADD YOUR OWN PRODUCTS HERE.
-    // Copy the example object below, change its details, and add a comma between products.
-    // Use unique numeric IDs. Prices are in Indian Rupees (₹).
-    const products = [
-      // {
-      //   id: 1,
-      //   name: 'Your product name',
-      //   type: 'Wear', // Choose a category used by your store
-      //   price: 1499,
-      //   old: null, // Optional original price, e.g. 1999
-      //   tag: 'New',
-      //   image: 'https://your-image-link.jpg',
-      //   description: 'Write your product description here.'
-      // }
-    ];
+    const products = [];
+let productsLoaded = false;
+
+async function loadProducts() {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('is_active', true);
+
+    if (error) throw error;
+
+    products.splice(0, products.length, ...(data || []).map(p => ({
+      id: p.id,
+      name: p.name,
+      type: p.category || 'All',
+      price: Number(p.price),
+      old: null,
+      tag: '',
+      image: p.image_url || '',
+      description: p.description || ''
+    })));
+
+    productsLoaded = true;
+    renderProducts();
+  } catch (error) {
+    console.error('Could not load products:', error);
+  }
+}
     const money = n => '₹' + Number(n).toLocaleString('en-IN');
     let activeFilter = 'All', searchTerm = '', activeProduct = null;
     let cart = JSON.parse(localStorage.getItem('nova-cart') || '[]');
@@ -141,5 +155,16 @@
     document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeCart();closeProduct();$('searchBar').classList.remove('open');}});
     renderProducts();updateCart();
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const SUPABASE_URL = 'https://hgvoilxcexlpnanypzrn.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_nv_6NzyGhfsVbLZVPC2e3g_-LzHCwis';
+
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+</script>
 </body>
 </html>
