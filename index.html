@@ -33,7 +33,7 @@
   <div class="announcement">MADE FOR INDIA <b>✳</b> FREE SHIPPING ON EVERY ORDER — ALWAYS</div>
   <header class="header">
     <a class="logo" href="#home" aria-label="NOVA home">NOVA<span class="logo-mark"></span></a>
-    <nav class="nav" aria-label="Main navigation"><a href="#shop">Shop all</a><a href="#categories">Collections</a><a href="#story">Our point of view</a><a href="#track-order">Track Order</a></nav>
+    <nav class="nav" aria-label="Main navigation"><a href="#shop">Shop all</a><a href="#categories">Collections</a><a href="#story">Our point of view</a><a href="#track-order" id="trackOrderNav">Track Order</a></nav>
       <button class="icon-btn" id="searchToggle" aria-label="Search products"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg></button>
       <button class="icon-btn" id="wishlistTop" aria-label="Wishlist"><svg viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.1-8.8 10-8.8 10s-8.8-4.9-8.8-10A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.6Z"/></svg></button>
       <button class="icon-btn" id="cartToggle" aria-label="Open shopping bag"><svg viewBox="0 0 24 24"><path d="M5 8h14l1 13H4L5 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></svg><span class="count" id="cartCount">0</span></button>
@@ -43,7 +43,7 @@
   </header>
 
   <main id="home">
-    <section class="section" id="track-order">
+    <section class="section" id="track-order" hidden>
   <div class="section-top">
     <div>
       <div class="kicker">NOVA ORDER CARE</div>
@@ -342,6 +342,18 @@ updateCart();
   document.getElementById('novaDoneOrder').addEventListener('click', () => {
     popup.remove();
   });
+
+      document.getElementById('trackOrderNav').addEventListener('click', (e) => {
+  e.preventDefault();
+
+  const section = document.getElementById('track-order');
+  section.hidden = false;
+
+  section.scrollIntoView({
+    behavior: 'smooth',
+    block: 'center'
+  });
+});
 }
     function escapeTrackText(value) {
   return String(value ?? '').replace(/[&<>"']/g, char => ({
