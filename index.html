@@ -97,7 +97,7 @@ let productsLoaded = false;
 
 async function loadProducts() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await novaSupabase
       .from('products')
       .select('*')
       .eq('is_active', true);
@@ -140,11 +140,11 @@ async function loadProducts() {
     function closeProduct(){$('quickModal').classList.remove('open');if(!$('cartDrawer').classList.contains('open'))$('overlay').classList.remove('open');document.body.style.overflow='';}
     function setFilter(value){activeFilter=value;document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.filter===value));renderProducts();$('shop').scrollIntoView({behavior:'smooth',block:'start'});}
 
-    grid.addEventListener('click',e=>{const add=e.target.closest('[data-add]');const heart=e.target.closest('[data-heart]');const view=e.target.closest('[data-view]');if(add){e.stopPropagation();addToCart(Number(add.dataset.add));}else if(heart){e.stopPropagation();const id=Number(heart.dataset.heart);wishlist=wishlist.includes(id)?wishlist.filter(x=>x!==id):[...wishlist,id];save();renderProducts();toast(wishlist.includes(id)?'Saved to your wishlist ♡':'Removed from wishlist');}else if(view){openProduct(Number(view.dataset.view));}});
+    grid.addEventListener('click',e=>{const add=e.target.closest('[data-add]');const heart=e.target.closest('[data-heart]');const view=e.target.closest('[data-view]');if(add){e.stopPropagation();addToCart(add.dataset.add);}else if(heart){e.stopPropagation();const id=heart.dataset.heart;wishlist=wishlist.includes(id)?wishlist.filter(x=>x!==id):[...wishlist,id];save();renderProducts();toast(wishlist.includes(id)?'Saved to your wishlist ♡':'Removed from wishlist');}else if(view){openProduct(view.dataset.view);}});
     $('filters').addEventListener('click',e=>{const b=e.target.closest('[data-filter]');if(b)setFilter(b.dataset.filter);});
     document.querySelectorAll('.category').forEach(b=>b.addEventListener('click',()=>setFilter(b.dataset.category)));
     $('cartToggle').addEventListener('click',openCart);$('mobileCart').addEventListener('click',openCart);$('closeCart').addEventListener('click',closeCart);$('overlay').addEventListener('click',()=>{closeCart();closeProduct();});
-    $('cartItems').addEventListener('click',e=>{const q=e.target.closest('[data-qty]');const r=e.target.closest('[data-remove]');if(q){const id=Number(q.dataset.qty),item=cart.find(x=>x.id===id);item.qty+=Number(q.dataset.change);if(item.qty<=0)cart=cart.filter(x=>x.id!==id);updateCart();}if(r){cart=cart.filter(x=>x.id!==Number(r.dataset.remove));updateCart();}});
+    $('cartItems').addEventListener('click',e=>{const q=e.target.closest('[data-qty]');const r=e.target.closest('[data-remove]');if(q){const id=q.dataset.qty,item=cart.find(x=>x.id===id);item.qty+=Number(q.dataset.change);if(item.qty<=0)cart=cart.filter(x=>x.id!==id);updateCart();}if(r){cart=cart.filter(x=>x.id!==r.dataset.remove);updateCart();}});
     $('closeModal').addEventListener('click',closeProduct);$('modalAdd').addEventListener('click',()=>{if(activeProduct)addToCart(activeProduct.id);closeProduct();openCart();});
     $('searchToggle').addEventListener('click',()=>{$('searchBar').classList.toggle('open');if($('searchBar').classList.contains('open'))$('searchInput').focus();});
     $('searchInput').addEventListener('input',e=>{searchTerm=e.target.value.trim().toLowerCase();activeFilter='All';document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.filter==='All'));renderProducts();$('shop').scrollIntoView({behavior:'smooth',block:'start'});});
@@ -161,12 +161,12 @@ async function loadProducts() {
 const SUPABASE_URL = 'https://hgvoilxcexlpnanypzrn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_nv_6NzyGhfsVbLZVPC2e3g_-LzHCwis';
 
-const supabase = window.supabase.createClient(
+const novaSupabase = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
 
-  loadProducts();
+loadProducts();
 </script>
 </body>
 </html>
