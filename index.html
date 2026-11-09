@@ -28,6 +28,41 @@
     @media(hover:none){.quick-add{transform:none;opacity:1}}
     @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
   </style>
+  
+<style>
+.size-picker {
+  margin: 0 0 20px;
+}
+
+.size-picker label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 9px;
+}
+
+.size-picker select {
+  width: 100%;
+  padding: 13px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+  font: inherit;
+  color: #171815;
+}
+
+.size-error {
+  color: #c0392b;
+  font-size: 11px;
+  margin-top: 7px;
+}
+.cart-size {
+  font-size: 10px;
+  color: #77796f;
+  margin: 0 0 10px;
+}
+</style>
+
 </head>
 <body>
   <div class="announcement">MADE FOR INDIA <b>✳</b> FREE SHIPPING ON EVERY ORDER — ALWAYS</div>
@@ -105,7 +140,8 @@
   <div class="overlay" id="overlay"></div>
   <aside class="drawer" id="cartDrawer" aria-label="Shopping cart" aria-modal="true" role="dialog"><div class="drawer-head"><h3>Your bag <span id="bagHeadingCount">(0)</span></h3><button class="close" id="closeCart" aria-label="Close cart">×</button></div><div class="cart-items" id="cartItems"></div><div class="drawer-bottom" id="drawerBottom"><div class="subtotal"><span>Subtotal</span><span id="subtotal">₹0</span></div><div class="subtotal"><span>Shipping</span><span id="shippingTotal">FREE</span></div><div class="shipping-note"> <strong>FREE SHIPPING</strong> on every order. India-only delivery. No minimum cart value.</div><button class="button checkout" id="checkoutButton">Continue to checkout ↗</button></div></aside>
 
-  <div class="modal-wrap" id="quickModal"><div class="modal" role="dialog" aria-modal="true" aria-label="Product details"><button class="close modal-close" id="closeModal" aria-label="Close details">×</button><div class="modal-image"><img id="modalImage" src="" alt=""></div><div class="modal-copy"><div class="kicker" id="modalCategory">NOVA SELECT</div><h3 id="modalName">Product name</h3><p id="modalDescription">Thoughtfully chosen for everyday use.</p><div class="modal-price" id="modalPrice">₹0</div><button class="button" id="modalAdd">Add to bag ↗</button></div></div></div>
+  <div class="modal-wrap" id="quickModal"><div class="modal" role="dialog" aria-modal="true" aria-label="Product details"><button class="close modal-close" id="closeModal" aria-label="Close details">×</button><div class="modal-image"><img id="modalImage" src="" alt=""></div><div class="modal-copy"><div class="kicker" id="modalCategory">NOVA SELECT</div><h3 id="modalName">Product name</h3><p id="modalDescription">Thoughtfully chosen for everyday use.</p>
+    </div></div></div>
   <div class="toast" id="toast" role="status"></div>
 
   
@@ -213,16 +249,17 @@ async function loadProducts() {
 
     if (error) throw error;
 
-    products.splice(0, products.length, ...(data || []).map(p => ({
-      id: p.id,
-      name: p.name,
-      type: p.category || 'All',
-      price: Number(p.price),
-      old: null,
-      tag: '',
-      image: p.image_url || '',
-      description: p.description || ''
-    })));
+   products.splice(0, products.length, ...(data || []).map(p => ({
+  id: p.id,
+  name: p.name,
+  type: p.category || 'All',
+  price: Number(p.price),
+  old: null,
+  tag: '',
+  image: p.image_url || '',
+  description: p.description || '',
+  sizeType: p.size_type || 'none'
+})));
 
    productsLoaded = true;
 renderProducts();
@@ -241,25 +278,295 @@ updateCart();
     function save(){localStorage.setItem('nova-cart',JSON.stringify(cart));localStorage.setItem('nova-wishlist',JSON.stringify(wishlist));}
     function toast(message){const t=$('toast');t.textContent=message;t.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.remove('show'),2300);}
     function filteredProducts(){return products.filter(p=>(activeFilter==='All'||p.type===activeFilter)&&(p.name.toLowerCase().includes(searchTerm)||p.type.toLowerCase().includes(searchTerm)));}
-    function renderProducts(){const list=filteredProducts();grid.innerHTML=list.length?list.map(p=>`<article class="product-card"><div class="product-image" data-view="${p.id}"><img src="${p.image}" alt="${p.name}" loading="lazy"><span class="tag">${p.tag}</span><button class="heart ${wishlist.includes(p.id)?'liked':''}" data-heart="${p.id}" aria-label="Add ${p.name} to wishlist"><svg viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.1-8.8 10-8.8 10s-8.8-4.9-8.8-10A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.6Z"/></svg></button><button class="quick-add" data-add="${p.id}">Add to bag +</button></div><div class="product-meta"><div><div class="product-name">${p.name}</div><div class="product-type">${p.type} · NOVA select</div></div><div class="price">${money(p.price)}</div></div></article>`).join(''):'<div class="empty"><strong>Your collection starts here.</strong><br>Add your products in the <code>const products</code> section of this file, then refresh the page.</div>';}
-    function updateCart(){cart=cart.filter(item=>products.some(p=>p.id===item.id));const count=cart.reduce((n,item)=>n+item.qty,0);$('cartCount').textContent=count;$('mobileCartCount').textContent=count;$('bagHeadingCount').textContent=`(${count})`;$('subtotal').textContent=money(cart.reduce((sum,item)=>sum+products.find(p=>p.id===item.id).price*item.qty,0));$('shippingTotal').textContent='FREE';$('cartItems').innerHTML=cart.length?cart.map(item=>{const p=products.find(x=>x.id===item.id);return `<div class="cart-row"><img src="${p.image}" alt="${p.name}"><div><h4>${p.name}</h4><p>${p.type}</p><div class="qty"><button data-qty="${p.id}" data-change="-1" aria-label="Decrease quantity">−</button><span>${item.qty}</span><button data-qty="${p.id}" data-change="1" aria-label="Increase quantity">+</button></div><br><button class="remove" data-remove="${p.id}">Remove</button></div><div class="cart-price">${money(p.price*item.qty)}</div></div>`}).join(''):"<div class=\"cart-empty\"><strong>Your bag is taking a break.</strong><span>Let’s find something good.</span></div>";save();}
-    function addToCart(id){const found=cart.find(x=>x.id===id);if(found)found.qty++;else cart.push({id,qty:1});updateCart();toast('Added to your bag ✳');}
+    
+function renderProducts() {
+  const list = filteredProducts();
+
+  grid.innerHTML = list.length
+    ? list.map(p => `
+      <article class="product-card">
+        <div class="product-image" data-view="${p.id}">
+          <img src="${p.image}" alt="${p.name}" loading="lazy">
+          <span class="tag">${p.tag}</span>
+
+          <button class="heart ${wishlist.includes(p.id) ? 'liked' : ''}"
+            data-heart="${p.id}" aria-label="Add ${p.name} to wishlist">
+            <svg viewBox="0 0 24 24">
+              <path d="M20.8 8.8c0 5.1-8.8 10-8.8 10s-8.8-4.9-8.8-10A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.6Z"/>
+            </svg>
+          </button>
+
+          <button class="quick-add" data-add="${p.id}">
+            ${p.sizeType !== 'none' ? 'Choose size +' : 'Add to bag +'}
+          </button>
+        </div>
+
+        <div class="product-meta">
+          <div>
+            <div class="product-name">${p.name}</div>
+            <div class="product-type">${p.type} · NOVA select</div>
+          </div>
+          <div class="price">${money(p.price)}</div>
+        </div>
+      </article>
+    `).join('')
+    : '<div class="empty"><strong>Your collection starts here.</strong><br>Add your products in Supabase, then refresh the page.</div>';
+}
+
+function updateCart() {
+  cart = cart.filter(item => {
+    const p = products.find(x => x.id === item.id);
+    if (!p) return false;
+    if (p.sizeType === 'none') return !item.size;
+    return Boolean(item.size);
+  });
+
+  const count = cart.reduce((n, item) => n + item.qty, 0);
+
+  $('cartCount').textContent = count;
+  $('mobileCartCount').textContent = count;
+  $('bagHeadingCount').textContent = `(${count})`;
+
+  $('subtotal').textContent = money(
+    cart.reduce((sum, item) => {
+      const p = products.find(x => x.id === item.id);
+      return sum + p.price * item.qty;
+    }, 0)
+  );
+
+  $('shippingTotal').textContent = 'FREE';
+
+  $('cartItems').innerHTML = cart.length
+    ? cart.map(item => {
+        const p = products.find(x => x.id === item.id);
+        const cartKey = encodeURIComponent(item.id + '|' + (item.size || ''));
+
+        return `
+          <div class="cart-row">
+            <img src="${p.image}" alt="${p.name}">
+            <div>
+              <h4>${p.name}</h4>
+              <p>${p.type}</p>
+
+              ${item.size ? `<p class="cart-size">Size: ${item.size}${p.sizeType === 'shoes' ? ' (UK)' : ''}</p>` : ''}
+
+              <div class="qty">
+                <button data-cart-key="${cartKey}" data-change="-1">−</button>
+                <span>${item.qty}</span>
+                <button data-cart-key="${cartKey}" data-change="1">+</button>
+              </div>
+
+              <br>
+              <button class="remove" data-remove-key="${cartKey}">Remove</button>
+            </div>
+
+            <div class="cart-price">${money(p.price * item.qty)}</div>
+          </div>
+        `;
+      }).join('')
+    : `<div class="cart-empty">
+         <strong>Your bag is taking a break.</strong>
+         <span>Let's find something good.</span>
+       </div>`;
+
+  save();
+}
+
+function addToCart(id, size = '') {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+
+  if (p.sizeType !== 'none' && !size) {
+    openProduct(id);
+    return;
+  }
+
+  const found = cart.find(x =>
+    x.id === id && (x.size || '') === size
+  );
+
+  if (found) {
+    found.qty++;
+  } else {
+    cart.push({ id, qty: 1, size });
+  }
+
+  updateCart();
+  toast('Added to your bag ✳');
+}    function addToCart(id, size = '') {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+
+  if (p.sizeType !== 'none' && !size) {
+    openProduct(id);
+    return;
+  }
+
+  const found = cart.find(x =>
+    x.id === id && (x.size || '') === size
+  );
+
+  if (found) {
+    found.qty++;
+  } else {
+    cart.push({ id, qty: 1, size });
+  }
+
+  updateCart();
+  toast('Added to your bag ✳');
+}
     function openCart(){$('overlay').classList.add('open');$('cartDrawer').classList.add('open');document.body.style.overflow='hidden';}
     function closeCart(){$('overlay').classList.remove('open');$('cartDrawer').classList.remove('open');document.body.style.overflow='';}
-    function openProduct(id){const p=products.find(x=>x.id===id);if(!p)return;activeProduct=p;$('modalImage').src=p.image;$('modalImage').alt=p.name;$('modalCategory').textContent=p.type+' · NOVA SELECT';$('modalName').textContent=p.name;$('modalDescription').textContent=p.description;$('modalPrice').textContent=money(p.price);$('quickModal').classList.add('open');$('overlay').classList.add('open');document.body.style.overflow='hidden';}
+    function openProduct(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+
+  activeProduct = p;
+
+  $('modalImage').src = p.image;
+  $('modalImage').alt = p.name;
+  $('modalCategory').textContent = p.type + ' · NOVA SELECT';
+  $('modalName').textContent = p.name;
+  $('modalDescription').textContent = p.description;
+  $('modalPrice').textContent = money(p.price);
+
+  const sizeWrap = $('modalSizeWrap');
+  const sizeSelect = $('modalSize');
+
+  sizeSelect.value = '';
+  $('modalSizeError').hidden = true;
+
+  const needsSize = p.sizeType !== 'none';
+  sizeWrap.hidden = !needsSize;
+
+  if (p.sizeType === 'clothing') {
+    $('modalSizeLabel').textContent = 'Choose clothing size';
+    sizeSelect.innerHTML = `
+      <option value="">Select size</option>
+      <option value="XS">XS</option>
+      <option value="S">S</option>
+      <option value="M">M</option>
+      <option value="L">L</option>
+      <option value="XL">XL</option>
+      <option value="XXL">XXL</option>
+    `;
+  } else if (p.sizeType === 'shoes') {
+    $('modalSizeLabel').textContent = 'Choose shoe size (UK)';
+    sizeSelect.innerHTML = `
+      <option value="">Select UK size</option>
+      <option value="5">UK 5</option>
+      <option value="6">UK 6</option>
+      <option value="7">UK 7</option>
+      <option value="8">UK 8</option>
+      <option value="9">UK 9</option>
+      <option value="10">UK 10</option>
+      <option value="11">UK 11</option>
+      <option value="12">UK 12</option>
+    `;
+  }
+
+  $('quickModal').classList.add('open');
+  $('overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
     function closeProduct(){$('quickModal').classList.remove('open');if(!$('cartDrawer').classList.contains('open'))$('overlay').classList.remove('open');document.body.style.overflow='';}
     function setFilter(value){activeFilter=value;document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.filter===value));renderProducts();$('shop').scrollIntoView({behavior:'smooth',block:'start'});}
 
-    grid.addEventListener('click',e=>{const add=e.target.closest('[data-add]');const heart=e.target.closest('[data-heart]');const view=e.target.closest('[data-view]');if(add){e.stopPropagation();addToCart(add.dataset.add);}else if(heart){e.stopPropagation();const id=heart.dataset.heart;wishlist=wishlist.includes(id)?wishlist.filter(x=>x!==id):[...wishlist,id];save();renderProducts();toast(wishlist.includes(id)?'Saved to your wishlist ♡':'Removed from wishlist');}else if(view){openProduct(view.dataset.view);}});
+    grid.addEventListener('click', e => {
+  const add = e.target.closest('[data-add]');
+  const heart = e.target.closest('[data-heart]');
+  const view = e.target.closest('[data-view]');
+
+  if (add) {
+    e.stopPropagation();
+    const p = products.find(x => x.id === add.dataset.add);
+
+    if (p && p.sizeType !== 'none') {
+      openProduct(p.id);
+    } else {
+      addToCart(add.dataset.add);
+    }
+  } else if (heart) {
+    e.stopPropagation();
+    const id = heart.dataset.heart;
+
+    wishlist = wishlist.includes(id)
+      ? wishlist.filter(x => x !== id)
+      : [...wishlist, id];
+
+    save();
+    renderProducts();
+
+    toast(wishlist.includes(id)
+      ? 'Saved to your wishlist ♡'
+      : 'Removed from wishlist');
+  } else if (view) {
+    openProduct(view.dataset.view);
+  }
+});
     $('filters').addEventListener('click',e=>{const b=e.target.closest('[data-filter]');if(b)setFilter(b.dataset.filter);});
     document.querySelectorAll('.category').forEach(b=>b.addEventListener('click',()=>setFilter(b.dataset.category)));
     $('cartToggle').addEventListener('click',openCart);$('mobileCart').addEventListener('click',openCart);$('closeCart').addEventListener('click',closeCart);$('overlay').addEventListener('click',()=>{closeCart();closeProduct();});
-    $('cartItems').addEventListener('click',e=>{const q=e.target.closest('[data-qty]');const r=e.target.closest('[data-remove]');if(q){const id=q.dataset.qty,item=cart.find(x=>x.id===id);item.qty+=Number(q.dataset.change);if(item.qty<=0)cart=cart.filter(x=>x.id!==id);updateCart();}if(r){cart=cart.filter(x=>x.id!==r.dataset.remove);updateCart();}});
-    $('closeModal').addEventListener('click',closeProduct);$('modalAdd').addEventListener('click',()=>{if(activeProduct)addToCart(activeProduct.id);closeProduct();openCart();});
+    $('cartItems').addEventListener('click', e => {
+  const q = e.target.closest('[data-cart-key]');
+  const r = e.target.closest('[data-remove-key]');
+
+  if (q) {
+    const key = decodeURIComponent(q.dataset.cartKey);
+
+    const item = cart.find(x =>
+      (x.id + '|' + (x.size || '')) === key
+    );
+
+    if (!item) return;
+
+    item.qty += Number(q.dataset.change);
+
+    if (item.qty <= 0) {
+      cart = cart.filter(x => x !== item);
+    }
+
+    updateCart();
+  }
+
+  if (r) {
+    const key = decodeURIComponent(r.dataset.removeKey);
+
+    cart = cart.filter(x =>
+      (x.id + '|' + (x.size || '')) !== key
+    );
+
+    updateCart();
+  }
+});
+    $('closeModal').addEventListener('click', closeProduct);
+
+$('modalAdd').addEventListener('click', () => {
+  if (!activeProduct) return;
+
+  let selectedSize = '';
+
+  if (activeProduct.sizeType !== 'none') {
+    selectedSize = $('modalSize').value;
+
+    if (!selectedSize) {
+      $('modalSizeError').hidden = false;
+      return;
+    }
+  }
+
+  addToCart(activeProduct.id, selectedSize);
+  closeProduct();
+  openCart();
+});
     $('searchToggle').addEventListener('click',()=>{$('searchBar').classList.toggle('open');if($('searchBar').classList.contains('open'))$('searchInput').focus();});
     $('searchInput').addEventListener('input',e=>{searchTerm=e.target.value.trim().toLowerCase();activeFilter='All';document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.filter==='All'));renderProducts();$('shop').scrollIntoView({behavior:'smooth',block:'start'});});
     $('wishlistTop').addEventListener('click',()=>{activeFilter='All';searchTerm='';$('searchInput').value='';document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.filter==='All'));grid.innerHTML='';const saved=products.filter(p=>wishlist.includes(p.id));grid.innerHTML=saved.length?saved.map(p=>`<article class="product-card"><div class="product-image" data-view="${p.id}"><img src="${p.image}" alt="${p.name}"><span class="tag">Saved</span><button class="heart liked" data-heart="${p.id}" aria-label="Remove ${p.name} from wishlist"><svg viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.1-8.8 10-8.8 10s-8.8-4.9-8.8-10A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.6Z"/></svg></button><button class="quick-add" data-add="${p.id}">Add to bag +</button></div><div class="product-meta"><div><div class="product-name">${p.name}</div><div class="product-type">${p.type} · NOVA select</div></div><div class="price">${money(p.price)}</div></div></article>`).join(''):'<div class="empty">Your wishlist is waiting for its first good find ♡</div>';$('shop').scrollIntoView({behavior:'smooth'});});
-     $('checkoutButton').addEventListener('click', () => {   if (!cart.length) {     toast('Your bag is empty');     return;   }    $('novaCheckout').hidden = false; });  $('novaCodClose').addEventListener('click', () => {   $('novaCheckout').hidden = true; });  $('novaCodForm').addEventListener('submit', async (e) => {   e.preventDefault();    const form = e.currentTarget;   const button = form.querySelector('.cod-submit');   const message = $('novaCodMessage');    if (!cart.length) {     message.textContent = 'Your bag is empty.';     return;   }    button.disabled = true;   button.textContent = 'Placing order...';   message.textContent = 'Please wait...';    const customer = {     name: form.elements.name.value.trim(),     phone: form.elements.phone.value.trim(),     email: form.elements.email.value.trim(),     address_line: form.elements.address_line.value.trim(),     city: form.elements.city.value.trim(),     state: form.elements.state.value.trim(),     pincode: form.elements.pincode.value.trim()   };    try {     const { data, error } = await novaSupabase.functions.invoke(       'place-cod-order',       {         body: {           customer,           items: cart.map(item => ({             id: item.id,             quantity: item.qty           })),           privacy_consent: form.elements.privacy_consent.checked         }       }     );      if (error) throw error;     if (!data || !data.success) {       throw new Error(data?.error || 'Order could not be placed.');     }      cart = [];     save();     updateCart();      form.reset();     $('novaCheckout').hidden = true;     closeCart();      showOrderConfirmation(data.order_number);    } catch (error) {     console.error('Checkout error:', error);     message.textContent =       error.message || 'Could not place order. Please try again.';   } finally {     button.disabled = false;     button.textContent = 'Place COD order';   } });
+     $('checkoutButton').addEventListener('click', () => {   if (!cart.length) {     toast('Your bag is empty');     return;   }    $('novaCheckout').hidden = false; });  $('novaCodClose').addEventListener('click', () => {   $('novaCheckout').hidden = true; });  $('novaCodForm').addEventListener('submit', async (e) => {   e.preventDefault();    const form = e.currentTarget;   const button = form.querySelector('.cod-submit');   const message = $('novaCodMessage');    if (!cart.length) {     message.textContent = 'Your bag is empty.';     return;   }    button.disabled = true;   button.textContent = 'Placing order...';   message.textContent = 'Please wait...';    const customer = {     name: form.elements.name.value.trim(),     phone: form.elements.phone.value.trim(),     email: form.elements.email.value.trim(),     address_line: form.elements.address_line.value.trim(),     city: form.elements.city.value.trim(),     state: form.elements.state.value.trim(),     pincode: form.elements.pincode.value.trim()   };    try {     const { data, error } = await novaSupabase.functions.invoke(       'place-cod-order',       {         body: {           customer,           items: cart.map(item => ({
+  id: item.id,
+  quantity: item.qty,
+  size: item.size || null
+})),             id: item.id,             quantity: item.qty           })),           privacy_consent: form.elements.privacy_consent.checked         }       }     );      if (error) throw error;     if (!data || !data.success) {       throw new Error(data?.error || 'Order could not be placed.');     }      cart = [];     save();     updateCart();      form.reset();     $('novaCheckout').hidden = true;     closeCart();      showOrderConfirmation(data.order_number);    } catch (error) {     console.error('Checkout error:', error);     message.textContent =       error.message || 'Could not place order. Please try again.';   } finally {     button.disabled = false;     button.textContent = 'Place COD order';   } });
     $('newsletterForm').addEventListener('submit',e=>{e.preventDefault();const email=$('emailInput').value.trim();if(email){toast('You’re on the list. Good things coming ✳');$('emailInput').value='';}});
     $('menuToggle').addEventListener('click',()=>{$('searchBar').classList.toggle('open');$('searchInput').placeholder='Menu: search or explore below ↓';$('searchInput').focus();});
     document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeCart();closeProduct();$('searchBar').classList.remove('open');}});
@@ -399,7 +706,11 @@ document.getElementById('trackOrderForm').addEventListener('submit', async (e) =
     const safeItems = items.map(item => {
       const name = String(item.name || item.product_name || 'Item');
       const quantity = Number(item.quantity || item.qty || 1);
-      return `${name} × ${quantity}`;
+      const size = item.size
+  ? ` — Size: ${item.size}`
+  : '';
+
+return `${name}${size} × ${quantity}`;
     });
 
     result.innerHTML = `
