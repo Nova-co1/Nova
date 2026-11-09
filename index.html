@@ -115,8 +115,9 @@ async function loadProducts() {
       description: p.description || ''
     })));
 
-    productsLoaded = true;
-    renderProducts();
+   productsLoaded = true;
+renderProducts();
+updateCart();
   } catch (error) {
     console.error('Could not load products:', error);
   }
