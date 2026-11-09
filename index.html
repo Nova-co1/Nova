@@ -259,10 +259,90 @@ updateCart();
     $('searchToggle').addEventListener('click',()=>{$('searchBar').classList.toggle('open');if($('searchBar').classList.contains('open'))$('searchInput').focus();});
     $('searchInput').addEventListener('input',e=>{searchTerm=e.target.value.trim().toLowerCase();activeFilter='All';document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.filter==='All'));renderProducts();$('shop').scrollIntoView({behavior:'smooth',block:'start'});});
     $('wishlistTop').addEventListener('click',()=>{activeFilter='All';searchTerm='';$('searchInput').value='';document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.filter==='All'));grid.innerHTML='';const saved=products.filter(p=>wishlist.includes(p.id));grid.innerHTML=saved.length?saved.map(p=>`<article class="product-card"><div class="product-image" data-view="${p.id}"><img src="${p.image}" alt="${p.name}"><span class="tag">Saved</span><button class="heart liked" data-heart="${p.id}" aria-label="Remove ${p.name} from wishlist"><svg viewBox="0 0 24 24"><path d="M20.8 8.8c0 5.1-8.8 10-8.8 10s-8.8-4.9-8.8-10A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.6Z"/></svg></button><button class="quick-add" data-add="${p.id}">Add to bag +</button></div><div class="product-meta"><div><div class="product-name">${p.name}</div><div class="product-type">${p.type} · NOVA select</div></div><div class="price">${money(p.price)}</div></div></article>`).join(''):'<div class="empty">Your wishlist is waiting for its first good find ♡</div>';$('shop').scrollIntoView({behavior:'smooth'});});
-     $('checkoutButton').addEventListener('click', () => {   if (!cart.length) {     toast('Your bag is empty');     return;   }    $('novaCheckout').hidden = false; });  $('novaCodClose').addEventListener('click', () => {   $('novaCheckout').hidden = true; });  $('novaCodForm').addEventListener('submit', async (e) => {   e.preventDefault();    const form = e.currentTarget;   const button = form.querySelector('.cod-submit');   const message = $('novaCodMessage');    if (!cart.length) {     message.textContent = 'Your bag is empty.';     return;   }    button.disabled = true;   button.textContent = 'Placing order...';   message.textContent = 'Please wait...';    const customer = {     name: form.elements.name.value.trim(),     phone: form.elements.phone.value.trim(),     email: form.elements.email.value.trim(),     address_line: form.elements.address_line.value.trim(),     city: form.elements.city.value.trim(),     state: form.elements.state.value.trim(),     pincode: form.elements.pincode.value.trim()   };    try {     const { data, error } = await novaSupabase.functions.invoke(       'place-cod-order',       {         body: {           customer,           items: cart.map(item => ({             id: item.id,             quantity: item.qty           })),           privacy_consent: form.elements.privacy_consent.checked         }       }     );      if (error) throw error;     if (!data || !data.success) {       throw new Error(data?.error || 'Order could not be placed.');     }      cart = [];     save();     updateCart();      form.reset();     $('novaCheckout').hidden = true;     closeCart();      toast('Order placed! ' + data.order_number);    } catch (error) {     console.error('Checkout error:', error);     message.textContent =       error.message || 'Could not place order. Please try again.';   } finally {     button.disabled = false;     button.textContent = 'Place COD order';   } });
+     $('checkoutButton').addEventListener('click', () => {   if (!cart.length) {     toast('Your bag is empty');     return;   }    $('novaCheckout').hidden = false; });  $('novaCodClose').addEventListener('click', () => {   $('novaCheckout').hidden = true; });  $('novaCodForm').addEventListener('submit', async (e) => {   e.preventDefault();    const form = e.currentTarget;   const button = form.querySelector('.cod-submit');   const message = $('novaCodMessage');    if (!cart.length) {     message.textContent = 'Your bag is empty.';     return;   }    button.disabled = true;   button.textContent = 'Placing order...';   message.textContent = 'Please wait...';    const customer = {     name: form.elements.name.value.trim(),     phone: form.elements.phone.value.trim(),     email: form.elements.email.value.trim(),     address_line: form.elements.address_line.value.trim(),     city: form.elements.city.value.trim(),     state: form.elements.state.value.trim(),     pincode: form.elements.pincode.value.trim()   };    try {     const { data, error } = await novaSupabase.functions.invoke(       'place-cod-order',       {         body: {           customer,           items: cart.map(item => ({             id: item.id,             quantity: item.qty           })),           privacy_consent: form.elements.privacy_consent.checked         }       }     );      if (error) throw error;     if (!data || !data.success) {       throw new Error(data?.error || 'Order could not be placed.');     }      cart = [];     save();     updateCart();      form.reset();     $('novaCheckout').hidden = true;     closeCart();      showOrderConfirmation(data.order_number);    } catch (error) {     console.error('Checkout error:', error);     message.textContent =       error.message || 'Could not place order. Please try again.';   } finally {     button.disabled = false;     button.textContent = 'Place COD order';   } });
     $('newsletterForm').addEventListener('submit',e=>{e.preventDefault();const email=$('emailInput').value.trim();if(email){toast('You’re on the list. Good things coming ✳');$('emailInput').value='';}});
     $('menuToggle').addEventListener('click',()=>{$('searchBar').classList.toggle('open');$('searchInput').placeholder='Menu: search or explore below ↓';$('searchInput').focus();});
     document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeCart();closeProduct();$('searchBar').classList.remove('open');}});
+    function showOrderConfirmation(orderNumber) {
+  const oldPopup = document.getElementById('novaOrderConfirmation');
+  if (oldPopup) oldPopup.remove();
+
+  const popup = document.createElement('div');
+  popup.id = 'novaOrderConfirmation';
+
+  popup.style.cssText = `
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    background:rgba(0,0,0,.65);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  `;
+
+  popup.innerHTML = `
+    <div style="
+      background:#fff;
+      color:#222;
+      padding:30px 22px;
+      border-radius:18px;
+      width:100%;
+      max-width:420px;
+      text-align:center;
+      box-shadow:0 20px 60px rgba(0,0,0,.2);
+    ">
+      <div style="font-size:42px;margin-bottom:12px;">✓</div>
+      <h2 style="margin:0 0 10px;">Order placed!</h2>
+      <p style="color:#666;">Thank you for shopping with NOVA.</p>
+
+      <p style="margin-top:24px;font-size:13px;color:#777;">
+        YOUR ORDER NUMBER
+      </p>
+
+      <div id="novaOrderNumber" style="
+        font-size:20px;
+        font-weight:bold;
+        padding:15px;
+        background:#f4f3ee;
+        border-radius:10px;
+        overflow-wrap:anywhere;
+      "></div>
+
+      <button id="novaCopyOrder" class="button" style="width:100%;margin-top:15px;">
+        Copy Order Number
+      </button>
+
+      <p id="novaCopyMessage" style="font-size:13px;color:#38834b;"></p>
+
+      <button id="novaDoneOrder" class="button" style="width:100%;margin-top:10px;">
+        Continue shopping
+      </button>
+
+      <p style="font-size:12px;color:#777;margin-top:15px;">
+        Save your order number. You'll need it to track your order.
+      </p>
+    </div>
+  `;
+
+  document.body.appendChild(popup);
+
+  document.getElementById('novaOrderNumber').textContent = orderNumber;
+
+  document.getElementById('novaCopyOrder').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(orderNumber);
+      document.getElementById('novaCopyMessage').textContent = 'Order number copied!';
+    } catch (error) {
+      document.getElementById('novaCopyMessage').textContent =
+        'Please select and copy the order number manually.';
+    }
+  });
+
+  document.getElementById('novaDoneOrder').addEventListener('click', () => {
+    popup.remove();
+  });
+}
     function escapeTrackText(value) {
   return String(value ?? '').replace(/[&<>"']/g, char => ({
     '&': '&amp;',
